@@ -67,31 +67,27 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     onFindSimilar?.(item);
   };
 
-  // Build a same-origin proxied URL of the upstream image. PureRef will hit
-  // our /api/image endpoint, which fetches the upstream with the proper
-  // Referer / User-Agent and streams the bytes back — bypassing the
-  // hotlink protection that was blocking direct downloads.
-  const proxiedImageUrl = (() => {
-    const safeName = (item.title || "media")
-      .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
-      .slice(0, 60) || "media";
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/api/image?url=${encodeURIComponent(item.imageUrl)}&name=${encodeURIComponent(safeName)}`;
-  })();
+  // Same-origin proxy URLs:
+  //  - `proxiedThumbUrl` for fast display (small, keeps the drag ghost tiny)
+  //  - `proxiedFullUrl`  for PureRef downloads (original full-size, bypassing
+  //    upstream hotlink protection via server-side Referer)
+  const safeName = (item.title || "media")
+    .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
+    .slice(0, 60) || "media";
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const proxiedThumbUrl = `${origin}/api/image?url=${encodeURIComponent(item.thumbnailUrl)}&name=${encodeURIComponent(safeName)}`;
+  const proxiedFullUrl = `${origin}/api/image?url=${encodeURIComponent(item.imageUrl)}&name=${encodeURIComponent(safeName)}`;
 
-  // Drag-out to PureRef etc.: hand over the same-origin proxy URL so the
-  // drop target can actually download the file (no Referer issues).
+  // Drag-out to PureRef etc.: hand over the proxied full-size URL so the
+  // drop target can actually download the original file.
   const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
     if (clickTimer.current) {
       window.clearTimeout(clickTimer.current);
       clickTimer.current = null;
     }
-    const safeName = (item.title || "media")
-      .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
-      .slice(0, 60) || "media";
     const filename = `${safeName}.jpg`;
-    const dragUrl = proxiedImageUrl;
+    const dragUrl = proxiedFullUrl;
     try {
       e.dataTransfer.effectAllowed = "copy";
       e.dataTransfer.setData("text/uri-list", dragUrl);
@@ -99,6 +95,22 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       e.dataTransfer.setData("text/x-moz-url", `${dragUrl}\n${item.title || ""}`);
       // Chrome-specific: streams the file directly to the OS drop target.
       e.dataTransfer.setData("DownloadURL", `image/jpeg:${filename}:${dragUrl}`);
+
+      // Force the drag ghost to use the *rendered* size of the <img>
+      // element, not the image's natural pixel dimensions. Without this,
+      // a 2000x3000 source image produces a giant translucent ghost that
+      // visually drags across (and seems to "disturb") neighbouring tiles.
+      const target = e.currentTarget as HTMLImageElement;
+      const rect = target.getBoundingClientRect();
+      try {
+        e.dataTransfer.setDragImage(
+          target,
+          Math.round(rect.width / 2),
+          Math.round(rect.height / 2),
+        );
+      } catch {
+        // setDragImage unsupported — accept the default ghost.
+      }
     } catch {
       // ignore — text/uri-list above is the fallback that PureRef relies on
     }
@@ -169,7 +181,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         title="Click: find similar  •  Double-click: more actions"
       >
         <img
-          src={proxiedImageUrl}
+          src={proxiedThumbUrl}
           alt={item.title}
           loading="lazy"
           draggable
