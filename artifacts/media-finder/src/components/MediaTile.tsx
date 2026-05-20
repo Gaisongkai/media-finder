@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SearchResultItem } from "@workspace/api-client-react";
-import { Download, ExternalLink, Sparkles } from "lucide-react";
+import { Download, ExternalLink, Sparkles, Maximize2, X } from "lucide-react";
 
 interface MediaTileProps {
   item: SearchResultItem;
@@ -10,6 +10,15 @@ interface MediaTileProps {
 export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   const [hasError, setHasError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const clickTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimer.current) window.clearTimeout(clickTimer.current);
+    };
+  }, []);
 
   if (hasError) return null;
 
@@ -38,6 +47,48 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     onFindSimilar?.(item);
   };
 
+  // Single click = find similar (debounced so a double-click doesn't also fire it)
+  const handleSingleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (menuOpen) return;
+    if (clickTimer.current) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    clickTimer.current = window.setTimeout(() => {
+      onFindSimilar?.(item);
+      clickTimer.current = null;
+    }, 240);
+  };
+
+  // Double click = open the action menu (view full size / go to source)
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (clickTimer.current) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    setMenuOpen(true);
+  };
+
+  const closeMenu = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setMenuOpen(false);
+  };
+
+  const openLightbox = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setLightboxOpen(true);
+  };
+
+  const goSource = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
+  };
+
   const getSourceColor = (source: string) => {
     switch (source) {
       case 'google': return 'bg-blue-500/80 text-white';
@@ -49,63 +100,147 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   };
 
   return (
-    <div
-      className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={handleFindSimilar}
-      title="Click to find similar"
-    >
-      <img
-        src={item.thumbnailUrl}
-        alt={item.title}
-        loading="lazy"
-        onError={() => setHasError(true)}
-        className="w-full h-auto object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-        style={{
-          aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
-        }}
-      />
+    <>
+      <div
+        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in select-none"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => { setIsHovered(false); if (!lightboxOpen) setMenuOpen(false); }}
+        onClick={handleSingleClick}
+        onDoubleClick={handleDoubleClick}
+        title="Click: find similar  •  Double-click: more actions"
+      >
+        <img
+          src={item.thumbnailUrl}
+          alt={item.title}
+          loading="lazy"
+          draggable={false}
+          onError={() => setHasError(true)}
+          className="w-full h-auto object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          style={{
+            aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
+          }}
+        />
 
-      {/* Source Badge */}
-      <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${getSourceColor(item.source)}`}>
-        {item.source}
-      </div>
-
-      {/* Hover Overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="text-white font-medium text-sm line-clamp-2 mb-3 drop-shadow-md">
-          {item.title}
-        </p>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleFindSimilar}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground py-2 rounded-lg backdrop-blur-md text-xs font-medium transition-colors"
-            title="Find similar"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Find similar
-          </button>
-          <a
-            href={item.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
-            title="Open source"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-          <button
-            onClick={handleDownload}
-            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
-            title="Download image"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+        {/* Source Badge */}
+        <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${getSourceColor(item.source)}`}>
+          {item.source}
         </div>
+
+        {/* Hover Overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${isHovered && !menuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <p className="text-white font-medium text-sm line-clamp-2 mb-3 drop-shadow-md">
+            {item.title}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleFindSimilar}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground py-2 rounded-lg backdrop-blur-md text-xs font-medium transition-colors"
+              title="Find similar"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Find similar
+            </button>
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
+              title="Open source"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <button
+              onClick={handleDownload}
+              className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
+              title="Download image"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Double-click action menu */}
+        {menuOpen && (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
+            onClick={closeMenu}
+          >
+            <div
+              className="flex flex-col gap-2 p-3 rounded-xl bg-background/90 border border-white/10 shadow-2xl min-w-[180px]"
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={openLightbox}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-primary/20 hover:text-primary transition-colors text-left"
+              >
+                <Maximize2 className="w-4 h-4" />
+                View full size
+              </button>
+              <button
+                onClick={goSource}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-primary/20 hover:text-primary transition-colors text-left"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Go to source
+              </button>
+              <button
+                onClick={closeMenu}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors text-left"
+              >
+                <X className="w-3.5 h-3.5" />
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Full-size lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            title="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="absolute top-4 left-4 right-16 text-white/80 text-sm truncate">
+            {item.title}
+          </div>
+          <img
+            src={item.imageUrl}
+            alt={item.title}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Go to source
+            </a>
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary text-primary-foreground text-xs font-medium backdrop-blur-md transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
