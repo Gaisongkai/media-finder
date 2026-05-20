@@ -10,4 +10,5 @@ export type SearchResponseCounts = {
   google: number;
   pinterest: number;
   youtube: number;
+  artstation: number;
 };

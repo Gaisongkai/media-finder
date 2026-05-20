@@ -37,6 +37,7 @@ export default function MediaTile({ item }: MediaTileProps) {
       case 'google': return 'bg-blue-500/80 text-white';
       case 'pinterest': return 'bg-red-500/80 text-white';
       case 'youtube': return 'bg-red-600/80 text-white';
+      case 'artstation': return 'bg-emerald-500/80 text-white';
       default: return 'bg-gray-500/80 text-white';
     }
   };

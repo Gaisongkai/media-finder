@@ -3,7 +3,7 @@ import { SearchMediaQueryParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-type Source = "google" | "pinterest" | "youtube";
+type Source = "google" | "pinterest" | "youtube" | "artstation";
 
 type ResultItem = {
   id: string;
@@ -94,6 +94,7 @@ function detectSource(host: string): Source | "other" {
   if (host.includes("pinterest")) return "pinterest";
   if (host.includes("youtube.com") || host.includes("youtu.be"))
     return "youtube";
+  if (host.includes("artstation.com")) return "artstation";
   return "other";
 }
 
@@ -126,6 +127,7 @@ async function searchForSource(
   let q = query;
   if (source === "pinterest") q = `${query} site:pinterest.com`;
   if (source === "youtube") q = `${query} site:youtube.com`;
+  if (source === "artstation") q = `${query} site:artstation.com`;
 
   const raw = await ddgImageSearch(q);
   const items: ResultItem[] = [];
@@ -140,6 +142,7 @@ async function searchForSource(
       !(host.includes("youtube.com") || host.includes("youtu.be"))
     )
       continue;
+    if (source === "artstation" && !host.includes("artstation.com")) continue;
     if (source === "google") {
       const detected = detectSource(host);
       if (detected !== "other") continue;
@@ -164,7 +167,7 @@ router.get("/search", async (req: Request, res) => {
     return;
   }
 
-  const allSources: Source[] = ["google", "pinterest", "youtube"];
+  const allSources: Source[] = ["google", "pinterest", "youtube", "artstation"];
   const requested = sources
     ? sources
         .split(",")
@@ -183,6 +186,7 @@ router.get("/search", async (req: Request, res) => {
       google: 0,
       pinterest: 0,
       youtube: 0,
+      artstation: 0,
     };
 
     settled.forEach((r, idx) => {
@@ -201,6 +205,7 @@ router.get("/search", async (req: Request, res) => {
       google: [],
       pinterest: [],
       youtube: [],
+      artstation: [],
     };
     for (const it of merged) grouped[it.source].push(it);
     const interleaved: ResultItem[] = [];

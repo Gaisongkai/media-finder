@@ -9,7 +9,7 @@ import SourceFilters from "@/components/SourceFilters";
 export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [activeSource, setActiveSource] = useState<"all" | "google" | "pinterest" | "youtube">("all");
+  const [activeSource, setActiveSource] = useState<"all" | "google" | "pinterest" | "youtube" | "artstation">("all");
 
   const { data, isLoading, isError, refetch } = useSearchMedia(
     { q: submittedQuery },
@@ -83,7 +83,7 @@ export default function Home() {
             </div>
             <h1 className="text-4xl font-bold mb-4 tracking-tight">Curate your vision</h1>
             <p className="text-xl text-muted-foreground mb-8 text-balance">
-              A focused image-hunting tool for designers and creators. Search across Google, Pinterest, and YouTube simultaneously.
+              A focused image-hunting tool for designers and creators. Search across Google, Pinterest, YouTube, and ArtStation simultaneously.
               <br/><br/>
               为设计师和创作者打造的视觉灵感收集工具。
             </p>

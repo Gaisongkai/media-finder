@@ -13,4 +13,5 @@ export const SearchResultItemSource = {
   google: 'google',
   pinterest: 'pinterest',
   youtube: 'youtube',
+  artstation: 'artstation',
 } as const;

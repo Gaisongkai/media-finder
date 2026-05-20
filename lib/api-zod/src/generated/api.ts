@@ -22,14 +22,14 @@ export const HealthCheckResponse = zod.object({
  */
 export const SearchMediaQueryParams = zod.object({
   "q": zod.coerce.string().describe('Search query (Chinese or English)'),
-  "sources": zod.coerce.string().optional().describe('Comma-separated list of sources to include. Allowed values; google, pinterest, youtube. Defaults to all.')
+  "sources": zod.coerce.string().optional().describe('Comma-separated list of sources to include. Allowed values; google, pinterest, youtube, artstation. Defaults to all.')
 })
 
 export const SearchMediaResponse = zod.object({
   "query": zod.string(),
   "results": zod.array(zod.object({
   "id": zod.string(),
-  "source": zod.enum(['google', 'pinterest', 'youtube']),
+  "source": zod.enum(['google', 'pinterest', 'youtube', 'artstation']),
   "title": zod.string(),
   "thumbnailUrl": zod.string(),
   "imageUrl": zod.string(),
@@ -41,7 +41,8 @@ export const SearchMediaResponse = zod.object({
   "counts": zod.object({
   "google": zod.number(),
   "pinterest": zod.number(),
-  "youtube": zod.number()
+  "youtube": zod.number(),
+  "artstation": zod.number()
 })
 })
 

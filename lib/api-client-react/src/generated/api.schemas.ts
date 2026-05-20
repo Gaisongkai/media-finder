@@ -20,6 +20,7 @@ export const SearchResultItemSource = {
   google: 'google',
   pinterest: 'pinterest',
   youtube: 'youtube',
+  artstation: 'artstation',
 } as const;
 
 export interface SearchResultItem {
@@ -38,6 +39,7 @@ export type SearchResponseCounts = {
   google: number;
   pinterest: number;
   youtube: number;
+  artstation: number;
 };
 
 export interface SearchResponse {
@@ -52,7 +54,7 @@ export type SearchMediaParams = {
  */
 q: string;
 /**
- * Comma-separated list of sources to include. Allowed values; google, pinterest, youtube. Defaults to all.
+ * Comma-separated list of sources to include. Allowed values; google, pinterest, youtube, artstation. Defaults to all.
  */
 sources?: string;
 };

@@ -43,7 +43,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Comma-separated list of sources to include. Allowed values; google, pinterest, youtube. Defaults to all.
+          description: Comma-separated list of sources to include. Allowed values; google, pinterest, youtube, artstation. Defaults to all.
       responses:
         "200":
           description: Aggregated results
@@ -86,7 +86,7 @@ components:
           type: string
         source:
           type: string
-          enum: [google, pinterest, youtube]
+          enum: [google, pinterest, youtube, artstation]
         title:
           type: string
         thumbnailUrl:
@@ -126,7 +126,9 @@ components:
               type: number
             youtube:
               type: number
-          required: [google, pinterest, youtube]
+            artstation:
+              type: number
+          required: [google, pinterest, youtube, artstation]
       required:
         - query
         - results

@@ -1,20 +1,23 @@
 import React from "react";
 import { SearchResponseCounts } from "@workspace/api-client-react";
 
+type SourceId = "all" | "google" | "pinterest" | "youtube" | "artstation";
+
 interface SourceFiltersProps {
   counts: SearchResponseCounts;
-  activeSource: "all" | "google" | "pinterest" | "youtube";
-  onChange: (source: "all" | "google" | "pinterest" | "youtube") => void;
+  activeSource: SourceId;
+  onChange: (source: SourceId) => void;
 }
 
 export default function SourceFilters({ counts, activeSource, onChange }: SourceFiltersProps) {
-  const total = counts.google + counts.pinterest + counts.youtube;
+  const total = counts.google + counts.pinterest + counts.youtube + counts.artstation;
 
   const filters = [
     { id: "all" as const, label: "All", count: total },
     { id: "google" as const, label: "Google", count: counts.google },
     { id: "pinterest" as const, label: "Pinterest", count: counts.pinterest },
     { id: "youtube" as const, label: "YouTube", count: counts.youtube },
+    { id: "artstation" as const, label: "ArtStation", count: counts.artstation },
   ];
 
   return (
