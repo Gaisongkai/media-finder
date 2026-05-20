@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchMedia, getSearchMediaQueryKey } from "@workspace/api-client-react";
+import { useSearchMedia, getSearchMediaQueryKey, SearchResultItem } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, Image as ImageIcon, Sparkles, AlertCircle } from "lucide-react";
@@ -33,6 +33,21 @@ export default function Home() {
     setSearchInput(query);
     setSubmittedQuery(query);
     setActiveSource("all");
+  };
+
+  const handleFindSimilar = (item: SearchResultItem) => {
+    const base = (item.title || "").trim();
+    const host = (item.host || "").toLowerCase();
+    let extra = "";
+    if (host.includes("pinterest")) extra = " similar reference";
+    else if (host.includes("youtube")) extra = "";
+    else if (host.includes("artstation")) extra = " concept art similar";
+    const query = (base + extra).trim() || submittedQuery;
+    if (!query) return;
+    setSearchInput(query);
+    setSubmittedQuery(query);
+    setActiveSource("all");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const results = data?.results || [];
@@ -138,7 +153,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground/60">Try a broader keyword or different language.</p>
               </div>
             ) : (
-              <MediaGrid loading={false} items={filteredResults} />
+              <MediaGrid loading={false} items={filteredResults} onFindSimilar={handleFindSimilar} />
             )}
           </div>
         )}

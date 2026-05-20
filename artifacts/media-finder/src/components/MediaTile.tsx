@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { SearchResultItem } from "@workspace/api-client-react";
-import { Download, ExternalLink, ImageOff } from "lucide-react";
+import { Download, ExternalLink, Sparkles } from "lucide-react";
 
 interface MediaTileProps {
   item: SearchResultItem;
+  onFindSimilar?: (item: SearchResultItem) => void;
 }
 
-export default function MediaTile({ item }: MediaTileProps) {
+export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   const [hasError, setHasError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -27,9 +28,14 @@ export default function MediaTile({ item }: MediaTileProps) {
       window.URL.revokeObjectURL(url);
       a.remove();
     } catch (err) {
-      // Fallback if cross-origin blocked
       window.open(item.imageUrl, '_blank');
     }
+  };
+
+  const handleFindSimilar = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onFindSimilar?.(item);
   };
 
   const getSourceColor = (source: string) => {
@@ -43,10 +49,12 @@ export default function MediaTile({ item }: MediaTileProps) {
   };
 
   return (
-    <div 
-      className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5"
+    <div
+      className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleFindSimilar}
+      title="Click to find similar"
     >
       <img
         src={item.thumbnailUrl}
@@ -58,7 +66,7 @@ export default function MediaTile({ item }: MediaTileProps) {
           aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
         }}
       />
-      
+
       {/* Source Badge */}
       <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${getSourceColor(item.source)}`}>
         {item.source}
@@ -69,21 +77,30 @@ export default function MediaTile({ item }: MediaTileProps) {
         <p className="text-white font-medium text-sm line-clamp-2 mb-3 drop-shadow-md">
           {item.title}
         </p>
-        
+
         <div className="flex items-center gap-2">
-          <a 
-            href={item.sourceUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg backdrop-blur-md text-xs font-medium transition-colors"
+          <button
+            onClick={handleFindSimilar}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground py-2 rounded-lg backdrop-blur-md text-xs font-medium transition-colors"
+            title="Find similar"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Open Source
+            <Sparkles className="w-3.5 h-3.5" />
+            Find similar
+          </button>
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
+            title="Open source"
+          >
+            <ExternalLink className="w-4 h-4" />
           </a>
-          <button 
+          <button
             onClick={handleDownload}
-            className="flex items-center justify-center w-10 h-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg backdrop-blur-md transition-colors"
-            title="Download Image"
+            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md transition-colors"
+            title="Download image"
           >
             <Download className="w-4 h-4" />
           </button>

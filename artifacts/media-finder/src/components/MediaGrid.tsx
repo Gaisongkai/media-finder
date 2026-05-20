@@ -5,9 +5,10 @@ import { SearchResultItem } from "@workspace/api-client-react";
 interface MediaGridProps {
   loading: boolean;
   items: SearchResultItem[];
+  onFindSimilar?: (item: SearchResultItem) => void;
 }
 
-export default function MediaGrid({ loading, items }: MediaGridProps) {
+export default function MediaGrid({ loading, items, onFindSimilar }: MediaGridProps) {
   if (loading) {
     return (
       <div className="masonry-grid">
@@ -26,7 +27,7 @@ export default function MediaGrid({ loading, items }: MediaGridProps) {
     <div className="masonry-grid">
       {items.map((item, i) => (
         <div key={item.id} className="masonry-item animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
-          <MediaTile item={item} />
+          <MediaTile item={item} onFindSimilar={onFindSimilar} />
         </div>
       ))}
     </div>
