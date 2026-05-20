@@ -48,6 +48,31 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     onFindSimilar?.(item);
   };
 
+  // Drag-out: makes PureRef (and other apps) receive the ORIGINAL-size
+  // source image URL, not the bing/ddg thumbnail. PureRef will fetch
+  // `imageUrl` itself when it sees the text/uri-list payload.
+  const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
+    if (clickTimer.current) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    const url = item.imageUrl;
+    const safeName = (item.title || "media")
+      .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
+      .slice(0, 60) || "media";
+    const filename = `${safeName}.jpg`;
+    try {
+      e.dataTransfer.effectAllowed = "copy";
+      e.dataTransfer.setData("text/uri-list", url);
+      e.dataTransfer.setData("text/plain", url);
+      e.dataTransfer.setData("text/x-moz-url", `${url}\n${item.title || ""}`);
+      // Chrome-specific: lets the browser stream the file to the OS drop target
+      e.dataTransfer.setData("DownloadURL", `image/jpeg:${filename}:${url}`);
+    } catch {
+      // ignore — text/uri-list above is the fallback that PureRef relies on
+    }
+  };
+
   // Single click = find similar (debounced so a double-click doesn't also fire it)
   const handleSingleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,7 +128,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   return (
     <>
       <div
-        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in select-none"
+        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => { setIsHovered(false); }}
         onClick={handleSingleClick}
@@ -114,7 +139,8 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
           src={item.thumbnailUrl}
           alt={item.title}
           loading="lazy"
-          draggable={false}
+          draggable
+          onDragStart={handleDragStart}
           onError={() => setHasError(true)}
           className="w-full h-auto object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           style={{
