@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: search
+    description: Multi-source image / media search
 paths:
   /healthz:
     get:
@@ -24,6 +26,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /search:
+    get:
+      operationId: searchMedia
+      tags: [search]
+      summary: Search images and videos across Google, Pinterest and YouTube
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query (Chinese or English)
+        - name: sources
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list of sources to include. Allowed values; google, pinterest, youtube. Defaults to all.
+      responses:
+        "200":
+          description: Aggregated results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Search failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +72,62 @@ components:
           type: string
       required:
         - status
-
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    SearchResultItem:
+      type: object
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+          enum: [google, pinterest, youtube]
+        title:
+          type: string
+        thumbnailUrl:
+          type: string
+        imageUrl:
+          type: string
+        sourceUrl:
+          type: string
+        width:
+          type: number
+        height:
+          type: number
+        host:
+          type: string
+      required:
+        - id
+        - source
+        - title
+        - thumbnailUrl
+        - imageUrl
+        - sourceUrl
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResultItem"
+        counts:
+          type: object
+          properties:
+            google:
+              type: number
+            pinterest:
+              type: number
+            youtube:
+              type: number
+          required: [google, pinterest, youtube]
+      required:
+        - query
+        - results
+        - counts
