@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { SearchResultItem } from "@workspace/api-client-react";
 import { Download, ExternalLink, Sparkles, Maximize2, X } from "lucide-react";
 
@@ -104,7 +105,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       <div
         className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in select-none"
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => { setIsHovered(false); if (!lightboxOpen) setMenuOpen(false); }}
+        onMouseLeave={() => { setIsHovered(false); }}
         onClick={handleSingleClick}
         onDoubleClick={handleDoubleClick}
         title="Click: find similar  •  Double-click: more actions"
@@ -198,11 +199,13 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         )}
       </div>
 
-      {/* Full-size lightbox */}
-      {lightboxOpen && (
+      {/* Full-size lightbox — portaled to document.body so it actually covers the viewport */}
+      {lightboxOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200"
           onClick={() => setLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
         >
           <button
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
@@ -218,7 +221,12 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
             src={item.imageUrl}
             alt={item.title}
             onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onError={(e) => {
+              // fall back to thumbnail if the full-size url is blocked / 404
+              const target = e.currentTarget as HTMLImageElement;
+              if (target.src !== item.thumbnailUrl) target.src = item.thumbnailUrl;
+            }}
+            className="max-w-full max-h-[88vh] object-contain rounded-lg shadow-2xl"
           />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
             <a
@@ -239,7 +247,8 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
               Download
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
