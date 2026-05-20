@@ -67,26 +67,38 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     onFindSimilar?.(item);
   };
 
-  // Drag-out: makes PureRef (and other apps) receive the ORIGINAL-size
-  // source image URL, not the bing/ddg thumbnail. PureRef will fetch
-  // `imageUrl` itself when it sees the text/uri-list payload.
+  // Build a same-origin proxied URL of the upstream image. PureRef will hit
+  // our /api/image endpoint, which fetches the upstream with the proper
+  // Referer / User-Agent and streams the bytes back — bypassing the
+  // hotlink protection that was blocking direct downloads.
+  const proxiedImageUrl = (() => {
+    const safeName = (item.title || "media")
+      .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
+      .slice(0, 60) || "media";
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/api/image?url=${encodeURIComponent(item.imageUrl)}&name=${encodeURIComponent(safeName)}`;
+  })();
+
+  // Drag-out to PureRef etc.: hand over the same-origin proxy URL so the
+  // drop target can actually download the file (no Referer issues).
   const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
     if (clickTimer.current) {
       window.clearTimeout(clickTimer.current);
       clickTimer.current = null;
     }
-    const url = item.imageUrl;
     const safeName = (item.title || "media")
       .replace(/[^\w\u4e00-\u9fa5\-]+/g, "_")
       .slice(0, 60) || "media";
     const filename = `${safeName}.jpg`;
+    const dragUrl = proxiedImageUrl;
     try {
       e.dataTransfer.effectAllowed = "copy";
-      e.dataTransfer.setData("text/uri-list", url);
-      e.dataTransfer.setData("text/plain", url);
-      e.dataTransfer.setData("text/x-moz-url", `${url}\n${item.title || ""}`);
-      // Chrome-specific: lets the browser stream the file to the OS drop target
-      e.dataTransfer.setData("DownloadURL", `image/jpeg:${filename}:${url}`);
+      e.dataTransfer.setData("text/uri-list", dragUrl);
+      e.dataTransfer.setData("text/plain", dragUrl);
+      e.dataTransfer.setData("text/x-moz-url", `${dragUrl}\n${item.title || ""}`);
+      // Chrome-specific: streams the file directly to the OS drop target.
+      e.dataTransfer.setData("DownloadURL", `image/jpeg:${filename}:${dragUrl}`);
     } catch {
       // ignore — text/uri-list above is the fallback that PureRef relies on
     }
@@ -157,7 +169,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         title="Click: find similar  •  Double-click: more actions"
       >
         <img
-          src={item.thumbnailUrl}
+          src={proxiedImageUrl}
           alt={item.title}
           loading="lazy"
           draggable
