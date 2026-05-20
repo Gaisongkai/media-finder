@@ -36,13 +36,19 @@ export default function Home() {
   };
 
   const handleFindSimilar = (item: SearchResultItem) => {
-    const base = (item.title || "").trim();
-    const host = (item.host || "").toLowerCase();
-    let extra = "";
-    if (host.includes("pinterest")) extra = " similar reference";
-    else if (host.includes("youtube")) extra = "";
-    else if (host.includes("artstation")) extra = " concept art similar";
-    const query = (base + extra).trim() || submittedQuery;
+    // Strip site-specific noise from the title so the new query matches
+    // evenly across Google / Pinterest / YouTube / ArtStation.
+    let base = (item.title || "").trim();
+    base = base
+      .replace(/\s*[-–|]\s*YouTube\s*$/i, "")
+      .replace(/^Pin\s+on\s+/i, "")
+      .replace(/^ArtStation\s*[-–|:]\s*/i, "")
+      .replace(/\s*[-–|]\s*ArtStation\s*$/i, "")
+      .replace(/\s*\|\s*Pinterest\s*$/i, "")
+      .replace(/\s*-\s*Pinterest\s*$/i, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    const query = base || submittedQuery;
     if (!query) return;
     setSearchInput(query);
     setSubmittedQuery(query);
