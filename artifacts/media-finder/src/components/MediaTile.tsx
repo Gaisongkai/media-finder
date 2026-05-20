@@ -161,7 +161,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
           draggable
           onDragStart={handleDragStart}
           onError={() => setHasError(true)}
-          className={`w-full h-auto object-cover transition-transform duration-700 ease-out ${isAnyDragging ? '' : 'group-hover:scale-105'}`}
+          className={`w-full h-auto object-cover transition-transform duration-300 ease-out ${isAnyDragging ? '' : 'group-hover:scale-[1.04]'}`}
           style={{
             aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
           }}
