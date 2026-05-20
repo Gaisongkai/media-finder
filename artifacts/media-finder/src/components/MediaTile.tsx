@@ -96,21 +96,32 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       // Chrome-specific: streams the file directly to the OS drop target.
       e.dataTransfer.setData("DownloadURL", `image/jpeg:${filename}:${dragUrl}`);
 
-      // Force the drag ghost to use the *rendered* size of the <img>
-      // element, not the image's natural pixel dimensions. Without this,
-      // a 2000x3000 source image produces a giant translucent ghost that
-      // visually drags across (and seems to "disturb") neighbouring tiles.
-      const target = e.currentTarget as HTMLImageElement;
-      const rect = target.getBoundingClientRect();
+      // Take full control of the drag ghost. We build a tiny offscreen
+      // <img> using the already-loaded thumbnail, force a fixed 200px
+      // width on it, and use *that* as the drag image. This guarantees
+      // the floating preview is small and isolated — it cannot visually
+      // overlap or "drag along" any neighbouring tiles.
+      const ghost = document.createElement("img");
+      ghost.src = proxiedThumbUrl;
+      ghost.style.position = "fixed";
+      ghost.style.top = "-10000px";
+      ghost.style.left = "-10000px";
+      ghost.style.width = "200px";
+      ghost.style.height = "auto";
+      ghost.style.borderRadius = "12px";
+      ghost.style.boxShadow = "0 12px 40px rgba(0,0,0,0.5)";
+      ghost.style.pointerEvents = "none";
+      document.body.appendChild(ghost);
       try {
-        e.dataTransfer.setDragImage(
-          target,
-          Math.round(rect.width / 2),
-          Math.round(rect.height / 2),
-        );
+        e.dataTransfer.setDragImage(ghost, 100, 100);
       } catch {
         // setDragImage unsupported — accept the default ghost.
       }
+      // Browser uses the snapshot synchronously, so it's safe to remove
+      // the element on the next tick.
+      window.setTimeout(() => {
+        if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      }, 0);
     } catch {
       // ignore — text/uri-list above is the fallback that PureRef relies on
     }
@@ -171,7 +182,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   return (
     <>
       <div
-        className={`group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing transition-all duration-200 ease-out ${
+        className={`group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ease-out ${
           showHoverUI ? 'scale-[1.06] z-20 shadow-2xl shadow-black/60 ring-2 ring-primary/40' : 'scale-100 z-0'
         }`}
         onMouseEnter={() => { if (!isAnyDragging) setIsHovered(true); }}
@@ -181,7 +192,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         title="Click: find similar  •  Double-click: more actions"
       >
         <img
-          src={proxiedFullUrl}
+          src={proxiedThumbUrl}
           alt={item.title}
           loading="lazy"
           draggable
