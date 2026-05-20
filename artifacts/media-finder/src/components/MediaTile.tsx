@@ -128,7 +128,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   return (
     <>
       <div
-        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-zoom-in"
+        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => { setIsHovered(false); }}
         onClick={handleSingleClick}
