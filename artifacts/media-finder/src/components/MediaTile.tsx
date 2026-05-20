@@ -147,7 +147,9 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   return (
     <>
       <div
-        className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing"
+        className={`group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing transition-all duration-200 ease-out ${
+          showHoverUI ? 'scale-[1.06] z-20 shadow-2xl shadow-black/60 ring-2 ring-primary/40' : 'scale-100 z-0'
+        }`}
         onMouseEnter={() => { if (!isAnyDragging) setIsHovered(true); }}
         onMouseLeave={() => { setIsHovered(false); }}
         onClick={handleSingleClick}
@@ -161,7 +163,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
           draggable
           onDragStart={handleDragStart}
           onError={() => setHasError(true)}
-          className={`w-full h-auto object-cover transition-transform duration-300 ease-out ${isAnyDragging ? '' : 'group-hover:scale-[1.04]'}`}
+          className="w-full h-auto object-cover"
           style={{
             aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
           }}
