@@ -11,6 +11,37 @@ export default function Home() {
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [activeSource, setActiveSource] = useState<"all" | "google" | "pinterest" | "youtube" | "artstation">("all");
 
+  // While a drag is in progress, prevent the browser's "drag-near-edge"
+  // auto-scroll from moving the waterfall under the cursor (which makes it
+  // feel like the dragged image is disturbing the others). We snap scroll
+  // back to where it was at drag start. Wheel-driven scrolling still works
+  // outside of an active drag — the user just can't auto-scroll by holding
+  // the dragged image near the viewport edge.
+  useEffect(() => {
+    let lockedY: number | null = null;
+    const onDragStart = () => {
+      lockedY = window.scrollY;
+    };
+    const onScroll = () => {
+      if (lockedY !== null && window.scrollY !== lockedY) {
+        window.scrollTo(window.scrollX, lockedY);
+      }
+    };
+    const onDragEnd = () => {
+      lockedY = null;
+    };
+    document.addEventListener("dragstart", onDragStart, true);
+    document.addEventListener("dragend", onDragEnd, true);
+    document.addEventListener("drop", onDragEnd, true);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      document.removeEventListener("dragstart", onDragStart, true);
+      document.removeEventListener("dragend", onDragEnd, true);
+      document.removeEventListener("drop", onDragEnd, true);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   const { data, isLoading, isError, refetch } = useSearchMedia(
     { q: submittedQuery },
     {
