@@ -36,10 +36,9 @@ export default function Home() {
   };
 
   const handleFindSimilar = (item: SearchResultItem) => {
-    // Strip site-specific noise from the title so the new query matches
-    // evenly across Google / Pinterest / YouTube / ArtStation.
-    let base = (item.title || "").trim();
-    base = base
+    // Step 1: strip site-specific noise from the title.
+    let cleaned = (item.title || "").trim();
+    cleaned = cleaned
       .replace(/\s*[-–|]\s*YouTube\s*$/i, "")
       .replace(/^Pin\s+on\s+/i, "")
       .replace(/^ArtStation\s*[-–|:]\s*/i, "")
@@ -48,7 +47,37 @@ export default function Home() {
       .replace(/\s*-\s*Pinterest\s*$/i, "")
       .replace(/\s{2,}/g, " ")
       .trim();
-    const query = base || submittedQuery;
+
+    // Step 2: detect junk / generic Pinterest board titles that have nothing
+    // to do with the image content (these are the #1 cause of "find similar"
+    // returning unrelated results). When detected, fall back to the user's
+    // original query so we stay on-topic.
+    const junkPattern = /^(quick\s*saves?|saves?|pins?|board|collection|untitled|image|images|photo|photos|video|videos|jpg|png|home|new|art|design|inspiration|reference|cool|nice|favourites?|favorites?|misc|wallpapers?|aesthetic|mood\s*board)$/i;
+    const isJunk =
+      cleaned.length < 4 ||
+      junkPattern.test(cleaned) ||
+      cleaned.split(/\s+/).every((w) => junkPattern.test(w));
+
+    // Step 3: build the new query. Anchor on the user's CURRENT search so the
+    // topic (e.g. "Porsche 911") is preserved, and only add the cleaned title
+    // when it's not junk and adds new information.
+    let query: string;
+    if (isJunk || !cleaned) {
+      query = submittedQuery;
+    } else if (!submittedQuery) {
+      query = cleaned;
+    } else {
+      const lower = cleaned.toLowerCase();
+      const baseLower = submittedQuery.toLowerCase();
+      if (lower.includes(baseLower) || baseLower.includes(lower)) {
+        // Title already restates the query — just use the more descriptive one.
+        query = cleaned.length > submittedQuery.length ? cleaned : submittedQuery;
+      } else {
+        // Combine, cap length to avoid over-specific queries.
+        const combined = `${submittedQuery} ${cleaned}`.slice(0, 100).trim();
+        query = combined;
+      }
+    }
     if (!query) return;
     setSearchInput(query);
     setSubmittedQuery(query);
