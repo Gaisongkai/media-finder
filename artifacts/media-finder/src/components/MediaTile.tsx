@@ -13,6 +13,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isAnyDragging, setIsAnyDragging] = useState(false);
   const clickTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -20,6 +21,24 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
     };
   }, []);
+
+  // Track a global "is something being dragged" flag so that the cursor
+  // passing over other tiles during a drag does NOT trigger their hover
+  // overlay / scale effect.
+  useEffect(() => {
+    const onStart = () => setIsAnyDragging(true);
+    const onEnd = () => setIsAnyDragging(false);
+    document.addEventListener("dragstart", onStart);
+    document.addEventListener("dragend", onEnd);
+    document.addEventListener("drop", onEnd);
+    return () => {
+      document.removeEventListener("dragstart", onStart);
+      document.removeEventListener("dragend", onEnd);
+      document.removeEventListener("drop", onEnd);
+    };
+  }, []);
+
+  const showHoverUI = isHovered && !menuOpen && !isAnyDragging;
 
   if (hasError) return null;
 
@@ -129,7 +148,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     <>
       <div
         className="group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing"
-        onMouseEnter={() => setIsHovered(true)}
+        onMouseEnter={() => { if (!isAnyDragging) setIsHovered(true); }}
         onMouseLeave={() => { setIsHovered(false); }}
         onClick={handleSingleClick}
         onDoubleClick={handleDoubleClick}
@@ -142,7 +161,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
           draggable
           onDragStart={handleDragStart}
           onError={() => setHasError(true)}
-          className="w-full h-auto object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          className={`w-full h-auto object-cover transition-transform duration-700 ease-out ${isAnyDragging ? '' : 'group-hover:scale-105'}`}
           style={{
             aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
           }}
@@ -154,7 +173,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         </div>
 
         {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${isHovered && !menuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${showHoverUI ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <p className="text-white font-medium text-sm line-clamp-2 mb-3 drop-shadow-md">
             {item.title}
           </p>
