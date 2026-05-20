@@ -181,7 +181,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         title="Click: find similar  •  Double-click: more actions"
       >
         <img
-          src={proxiedThumbUrl}
+          src={proxiedFullUrl}
           alt={item.title}
           loading="lazy"
           draggable
