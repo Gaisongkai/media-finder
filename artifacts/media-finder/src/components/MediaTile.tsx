@@ -46,7 +46,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     e.preventDefault();
     e.stopPropagation();
     try {
-      const response = await fetch(item.imageUrl, { mode: 'cors' });
+      const response = await fetch(proxiedFullUrl, { mode: 'cors' });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -57,7 +57,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       window.URL.revokeObjectURL(url);
       a.remove();
     } catch (err) {
-      window.open(item.imageUrl, '_blank');
+      window.open(proxiedFullUrl, '_blank');
     }
   };
 
@@ -314,13 +314,13 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
             {item.title}
           </div>
           <img
-            src={item.imageUrl}
+            src={proxiedFullUrl}
             alt={item.title}
             onClick={(e) => e.stopPropagation()}
             onError={(e) => {
-              // fall back to thumbnail if the full-size url is blocked / 404
+              // fall back to proxied thumbnail if the full-size url is blocked / 404
               const target = e.currentTarget as HTMLImageElement;
-              if (target.src !== item.thumbnailUrl) target.src = item.thumbnailUrl;
+              if (target.src !== proxiedThumbUrl) target.src = proxiedThumbUrl;
             }}
             className="max-w-full max-h-[88vh] object-contain rounded-lg shadow-2xl"
           />
