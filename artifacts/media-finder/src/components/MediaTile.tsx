@@ -174,7 +174,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   const openLightbox = (e: React.MouseEvent) => {
     e.stopPropagation();
     setMenuOpen(false);
-    setLightboxOpen(true);
+    window.open(proxiedFullUrl, "_blank", "noopener,noreferrer");
   };
 
   const goSource = (e: React.MouseEvent) => {
