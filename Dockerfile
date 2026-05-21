@@ -3,8 +3,8 @@
 # 单容器：Express API + React 前端静态文件，一个端口搞定
 # ============================================================
 
-# ── Stage 1: 安装全部依赖（用 Debian 避免 musl 兼容问题）────
-FROM node:24 AS deps
+# ── Stage 1: 安装全部依赖（构建阶段始终用宿主机原生平台）────
+FROM --platform=$BUILDPLATFORM node:24 AS deps
 RUN npm install -g pnpm@10
 
 WORKDIR /app
@@ -21,23 +21,23 @@ COPY scripts/package.json             scripts/
 RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: 编译共享 lib ────────────────────────────────────
-FROM deps AS libs
+FROM --platform=$BUILDPLATFORM deps AS libs
 COPY . .
 RUN pnpm run typecheck:libs
 
 # ── Stage 3: 构建前端静态文件 ────────────────────────────────
-FROM libs AS frontend
+FROM --platform=$BUILDPLATFORM libs AS frontend
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV BASE_PATH=/
 RUN pnpm --filter @workspace/media-finder run build
 
 # ── Stage 4: 构建后端 Bundle ─────────────────────────────────
-FROM libs AS backend
+FROM --platform=$BUILDPLATFORM libs AS backend
 ENV NODE_ENV=production
 RUN pnpm --filter @workspace/api-server run build
 
-# ── Stage 5: 最终运行镜像（轻量 Alpine）─────────────────────
+# ── Stage 5: 最终运行镜像（目标平台，支持 ARM64/AMD64）──────
 FROM node:24-alpine AS runner
 WORKDIR /app
 
