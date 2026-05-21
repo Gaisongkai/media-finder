@@ -122,6 +122,20 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
       window.setTimeout(() => {
         if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
       }, 0);
+
+      // CRITICAL: add a body class *synchronously* so the CSS rules in
+      // index.css that disable pointer-events / transforms on every
+      // .media-tile take effect on the very next frame — before the
+      // cursor can possibly move to a neighbouring tile and trigger a
+      // hover. React state-based gating was racy; this is not.
+      document.body.classList.add("dragging-media");
+      const clear = () => {
+        document.body.classList.remove("dragging-media");
+        window.removeEventListener("dragend", clear, true);
+        window.removeEventListener("drop", clear, true);
+      };
+      window.addEventListener("dragend", clear, true);
+      window.addEventListener("drop", clear, true);
     } catch {
       // ignore — text/uri-list above is the fallback that PureRef relies on
     }
@@ -182,7 +196,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   return (
     <>
       <div
-        className={`group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ease-out ${
+        className={`media-tile group relative rounded-xl overflow-hidden bg-muted/20 border border-white/5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ease-out ${
           showHoverUI ? 'scale-[1.06] z-20 shadow-2xl shadow-black/60 ring-2 ring-primary/40' : 'scale-100 z-0'
         }`}
         onMouseEnter={() => { if (!isAnyDragging) setIsHovered(true); }}
@@ -210,7 +224,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
         </div>
 
         {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${showHoverUI ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`media-tile-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${showHoverUI ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <p className="text-white font-medium text-sm line-clamp-2 mb-3 drop-shadow-md">
             {item.title}
           </p>

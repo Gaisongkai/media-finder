@@ -144,3 +144,23 @@
   break-inside: avoid;
   margin-bottom: 1rem;
 }
+
+/*
+ * While a media drag is active, freeze all media tiles: kill pointer events
+ * (so the cursor passing over them can't trigger hover), strip transforms,
+ * shadows, ring and z-index. This is added synchronously on dragstart via a
+ * body class so it beats any React state lag.
+ */
+body.dragging-media .media-tile {
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+  --tw-shadow: 0 0 transparent !important;
+  --tw-ring-shadow: 0 0 transparent !important;
+  --tw-ring-offset-shadow: 0 0 transparent !important;
+  z-index: 0 !important;
+}
+body.dragging-media .media-tile-overlay {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
