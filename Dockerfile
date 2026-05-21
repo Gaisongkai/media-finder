@@ -3,13 +3,12 @@
 # 单容器：Express API + React 前端静态文件，一个端口搞定
 # ============================================================
 
-# ── Stage 1: 安装全部依赖 ────────────────────────────────────
-FROM node:24-alpine AS deps
+# ── Stage 1: 安装全部依赖（用 Debian 避免 musl 兼容问题）────
+FROM node:24 AS deps
 RUN npm install -g pnpm@10
 
 WORKDIR /app
 
-# 先只复制 package.json 文件，利用 Docker 层缓存
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY lib/api-spec/package.json        lib/api-spec/
 COPY lib/api-client-react/package.json lib/api-client-react/
@@ -21,7 +20,7 @@ COPY scripts/package.json             scripts/
 
 RUN pnpm install --frozen-lockfile
 
-# ── Stage 2: 编译共享 lib（api-zod, api-client-react 等）────
+# ── Stage 2: 编译共享 lib ────────────────────────────────────
 FROM deps AS libs
 COPY . .
 RUN pnpm run typecheck:libs
@@ -38,11 +37,10 @@ FROM libs AS backend
 ENV NODE_ENV=production
 RUN pnpm --filter @workspace/api-server run build
 
-# ── Stage 5: 最终运行镜像 ────────────────────────────────────
+# ── Stage 5: 最终运行镜像（轻量 Alpine）─────────────────────
 FROM node:24-alpine AS runner
 WORKDIR /app
 
-# 只复制编译产物，保持镜像最小
 COPY --from=backend  /app/artifacts/api-server/dist  ./dist
 COPY --from=frontend /app/artifacts/media-finder/dist/public ./public
 
