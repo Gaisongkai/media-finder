@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SearchResultItem } from "@workspace/api-client-react";
-import { Download, ExternalLink, Sparkles, Maximize2, X } from "lucide-react";
+import { Download, ExternalLink, Sparkles, Maximize2, X, Layers, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface MediaTileProps {
   item: SearchResultItem;
@@ -14,6 +14,7 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isAnyDragging, setIsAnyDragging] = useState(false);
+  const [pureRefStatus, setPureRefStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const clickTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -183,6 +184,38 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
     window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleGoToPureRef = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pureRefStatus === 'loading') return;
+    setPureRefStatus('loading');
+    try {
+      // Fetch the full-size image via our same-origin proxy (handles
+      // hotlink protection, returns proper image/jpeg).
+      const res = await fetch(proxiedFullUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const imageBlob = blob.type.startsWith('image/')
+        ? blob
+        : new Blob([blob], { type: 'image/jpeg' });
+
+      // Write to system clipboard as an image. PureRef (and most reference
+      // tools) accept a Ctrl+V paste of an image directly.
+      await navigator.clipboard.write([
+        new ClipboardItem({ [imageBlob.type]: imageBlob }),
+      ]);
+      setPureRefStatus('done');
+      // Reset status after a few seconds so the button can be used again.
+      window.setTimeout(() => setPureRefStatus('idle'), 4000);
+    } catch (err) {
+      console.error('PureRef copy failed:', err);
+      // Fallback: open proxied full-size image in a new tab so the user
+      // can at least right-click → copy or save.
+      window.open(proxiedFullUrl, '_blank', 'noopener,noreferrer');
+      setPureRefStatus('error');
+      window.setTimeout(() => setPureRefStatus('idle'), 4000);
+    }
+  };
+
   const getSourceColor = (source: string) => {
     switch (source) {
       case 'google': return 'bg-blue-500/80 text-white';
@@ -276,6 +309,38 @@ export default function MediaTile({ item, onFindSimilar }: MediaTileProps) {
                 <Maximize2 className="w-4 h-4" />
                 View full size
               </button>
+              {/* ── Go to PureRef ── */}
+              <button
+                onClick={handleGoToPureRef}
+                disabled={pureRefStatus === 'loading'}
+                className="flex flex-col gap-1 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-purple-500/20 hover:text-purple-300 transition-colors text-left disabled:opacity-60"
+              >
+                <span className="flex items-center gap-2">
+                  {pureRefStatus === 'loading' && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {pureRefStatus === 'done'    && <CheckCircle2 className="w-4 h-4 text-green-400" />}
+                  {pureRefStatus === 'error'   && <AlertCircle  className="w-4 h-4 text-red-400" />}
+                  {pureRefStatus === 'idle'    && <Layers className="w-4 h-4" />}
+                  Go to PureRef
+                </span>
+                {pureRefStatus === 'done' && (
+                  <span className="text-xs text-green-400 leading-tight pl-6">
+                    已复制到剪贴板！<br />
+                    切换到 PureRef → Ctrl+V 粘贴
+                  </span>
+                )}
+                {pureRefStatus === 'error' && (
+                  <span className="text-xs text-amber-400 leading-tight pl-6">
+                    已在新标签页打开原图，<br />
+                    请右键→复制图片后粘贴到 PureRef
+                  </span>
+                )}
+                {pureRefStatus === 'idle' && (
+                  <span className="text-xs text-muted-foreground leading-tight pl-6">
+                    复制原图到剪贴板 → Ctrl+V 进 PureRef
+                  </span>
+                )}
+              </button>
+              <div className="h-px bg-white/10 my-0.5" />
               <button
                 onClick={goSource}
                 className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-primary/20 hover:text-primary transition-colors text-left"
