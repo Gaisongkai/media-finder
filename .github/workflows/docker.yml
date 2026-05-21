@@ -16,6 +16,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -28,4 +34,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/gaisongkai/media-finder:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/media-finder:latest
+            ghcr.io/gaisongkai/media-finder:latest
