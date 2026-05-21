@@ -32,5 +32,6 @@ jobs:
         with:
           context: .
           push: true
-        tags: ghcr.io/gaisongkai/media-finder:latest
+          tags: ghcr.io/gaisongkai/media-
+finder:latest
           
