@@ -1,6 +1,8 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { existsSync } from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -30,5 +32,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// When SERVE_STATIC_DIR is set (Docker / self-hosted mode), serve the built
+// React frontend from the same process so a single container is enough.
+const staticDir = process.env.SERVE_STATIC_DIR;
+if (staticDir && existsSync(staticDir)) {
+  app.use(express.static(staticDir));
+  app.get("*", (_req: Request, res: Response) => {
+    res.sendFile(path.join(staticDir, "index.html"));
+  });
+  logger.info({ staticDir }, "Serving static frontend files");
+}
 
 export default app;
