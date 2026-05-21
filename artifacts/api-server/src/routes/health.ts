@@ -8,7 +8,7 @@ router.get("/healthz", (_req, res) => {
   res.json(data);
 });
 
-router.get("/api/nettest", async (_req, res) => {
+router.get("/nettest", async (_req, res) => {
   const targets = [
     { name: "bing", url: "https://www.bing.com/images/async?q=test&count=1" },
     { name: "duckduckgo", url: "https://duckduckgo.com/" },
