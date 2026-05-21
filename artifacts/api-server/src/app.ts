@@ -38,7 +38,7 @@ app.use("/api", router);
 const staticDir = process.env.SERVE_STATIC_DIR;
 if (staticDir && existsSync(staticDir)) {
   app.use(express.static(staticDir));
-  app.get("*", (_req: Request, res: Response) => {
+  app.get("/{*splat}", (_req: Request, res: Response) => {
     res.sendFile(path.join(staticDir, "index.html"));
   });
   logger.info({ staticDir }, "Serving static frontend files");
