@@ -51,11 +51,11 @@ async function bingImageSearch(query: string): Promise<BingImageItem[]> {
   const html = await resp.text();
 
   const results: BingImageItem[] = [];
-  const re = /data-m="([^"]+)"/g;
+  const re = /\{&quot;[^{}]*murl&quot;[^{}]*\}/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
     try {
-      const raw = match[1]!.replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+      const raw = match[0].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
       const obj = JSON.parse(raw) as BingImageItem;
       if (obj.murl) results.push(obj);
     } catch {
